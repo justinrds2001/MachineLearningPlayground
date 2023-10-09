@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gymsnake"
+version = "1.0"
+authors = [
+  { name="Erco Argante", email="erco.argante@gmail.com" },
+]
+description = "A Gymnasium environment for multiplayer snake"
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+          'numpy',
+          'matplotlib',
+          'gymnasium',
+]
+
+[project.urls]
+"Homepage" = "https://bitbucket.org/ercoargante"
