@@ -1,0 +1,16 @@
+morning session:
+- students show their expert snakes (behavior and code) for the 2 competitions
+- deal with loose ends of workshop 1
+- slideset workshop 2a: dqn and vizdoom
+
+break:
+- get snake doom working
+- possibility to use the snake doom solution for single player snake (coordinate-based and pixel-based)
+
+afternoon session:
+- problems/questions with snake doom + quickly go over the code
+- workshop 2b:
+  * choice rl lib; SB3
+  * reward shaping; case study: mountain car with SB3
+  * go over gymsnake_singleplayer_agent_SB3.py and gymsnake_multiplayer_agent_SB3.py
+  * optional self-study: create your own environment; case study Avans solarboat
