@@ -135,5 +135,5 @@ function geneticAlgorithm(
 
 const exampleDataset: DataPoint[] = getData();
 
-const bestFit: Individual = geneticAlgorithm(exampleDataset, 100, 1, 0.1, 10);
+const bestFit: Individual = geneticAlgorithm(exampleDataset, 100, 100, 0.1, 10);
 console.log("Best Fit Parameters:", bestFit);

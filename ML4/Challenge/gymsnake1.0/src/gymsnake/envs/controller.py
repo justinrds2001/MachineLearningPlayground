@@ -27,6 +27,7 @@ class Snake:
     Stores the information of one snake. Note that the direction of an action is relative to the grid and not relative
     to the snake's head direction.
     """
+
     def __init__(self, head_coord_start, body_start_length, id_):
         """
         Initializes a snake with the head pointing down
@@ -50,7 +51,8 @@ class Snake:
         """
         assert 0 <= action.value < 4, "unsupported action value"
 
-        self.body.appendleft(self.head)  # add the head to the left side of the deque
+        # add the head to the left side of the deque
+        self.body.appendleft(self.head)
         match action:
             case Action.UP:
                 self.head = self.head[0], self.head[1] + 1
@@ -81,6 +83,7 @@ class Controller:
     """
     Controller contains the game logic
     """
+
     def __init__(self, grid_size, body_start_length, n_snakes, n_foods, random_food_init, square_size):
 
         # init snake world
@@ -94,7 +97,8 @@ class Controller:
             # place snakes in random order on grid, for the AI to learn each way of initialization
             # x-coord: divide space in n_snakes+1 parts and place each snake on the right side of a part
             # y-coord: place the middle of the snake one below the middle of the grid
-            head_start_coord = ((rnd+1) * grid_size[0] // (n_snakes + 1), (grid_size[1] - body_start_length) // 2 - 1)
+            head_start_coord = (
+                (rnd+1) * grid_size[0] // (n_snakes + 1), (grid_size[1] - body_start_length) // 2 - 1)
             self.snakes.append(Snake(head_start_coord, body_start_length, i))
 
         # init food
@@ -106,7 +110,8 @@ class Controller:
                 else:
                     # x-coord: divide space in n_foods+1 parts and place each snake on the right side of a part
                     # y-coord: place food just above the tail of the snakes
-                    food_coord = ((i+1) * grid_size[0] // (n_foods + 1), self.snakes[0].body[-1][1] + 2)
+                    food_coord = (
+                        (i+1) * grid_size[0] // (n_foods + 1), self.snakes[0].body[-1][1] + 2)
                     self.foods.append(food_coord)
 
     def n_empty_squares(self) -> int:
@@ -114,7 +119,7 @@ class Controller:
         returns the number of empty squares on the grid
         """
         return self.grid_size[0] * self.grid_size[1] - len(self.foods) \
-               - sum([snake.len() for snake in self.alive_snakes()])
+            - sum([snake.len() for snake in self.alive_snakes()])
 
     def n_alive_snakes(self) -> int:
         """
@@ -169,19 +174,23 @@ class Controller:
         """
         places a piece of food on a random empty square, if an empty square is left
         """
-        assert not self.n_empty_squares() == 0, "don't call place_new_food() if terminated is True"
+        assert not self.n_empty_squares(
+        ) == 0, "don't call place_new_food() if terminated is True"
 
         # two implementations with different efficiency to randomly select an empty square
-        if self.n_empty_squares() / self.grid_size[0] * self.grid_size[1] > 0.2:  # more than 20% empty squares
+        # more than 20% empty squares
+        if self.n_empty_squares() / self.grid_size[0] * self.grid_size[1] > 0.2:
             coord_found = False
             while not coord_found:
-                coord = (np.random.randint(0, self.grid_size[0]), np.random.randint(0, self.grid_size[1]))
+                coord = (np.random.randint(
+                    0, self.grid_size[0]), np.random.randint(0, self.grid_size[1]))
                 # check if square is empty
                 if not self.is_food_square(coord) and not self.is_snake_square(coord):
                     self.foods.append(coord)
                     coord_found = True
         else:  # less than 20% empty squares
-            all_empty_coords = set(product(range(self.grid_size[0]), range(self.grid_size[1])))
+            all_empty_coords = set(
+                product(range(self.grid_size[0]), range(self.grid_size[1])))
             all_empty_coords -= set(self.foods)
             for i, snake in enumerate(self.alive_snakes()):
                 all_empty_coords -= {snake.head}
@@ -191,34 +200,68 @@ class Controller:
 
     def step_snake(self, action, snake_idx) -> int:
         """
-        moves snake, if it is alive, and then checks for food and snake collisions
+        Moves snake, if it is alive, and then checks for food and snake collisions with improved reward shaping.
         """
 
-        # cannot use self.alive_snakes() here as the list of actions contains entries for all snakes, also dead ones
         snake = self.snakes[snake_idx]
-
-        # check if snake is alive
+        # Check if snake is alive
         if not snake.is_alive:
-            return 0
-
-        # move snake without removing tail end
-        snake.step_without_removing_tail_end(action)
-
-        # check for death of snake
-        if self.is_off_grid(snake.head) or self.is_snake_square_except_own_head(snake):
-            snake.is_alive = False
-            reward = -1
-        # check for food
-        elif self.is_food_square(snake.head):
-            self.foods.remove(snake.head)  # all food coords are unique
-            self.place_new_food()
-            reward = 1
-        # ordinary step
+            reward = -1000
         else:
-            snake.remove_tail_end()
-            reward = 0
+            # Move snake without removing tail end
+            snake.step_without_removing_tail_end(action)
+
+            # Check for death of snake
+            if self.is_off_grid(snake.head) or self.is_snake_square_except_own_head(snake):
+                reward = -500  # Gradual penalization for being closer to death
+                snake.is_alive = False
+            # Check for food
+            elif self.is_food_square(snake.head):
+                self.foods.remove(snake.head)  # All food coords are unique
+                self.place_new_food()
+                # Vary reward based on snake length
+                reward = 100 + 10 * len(snake.body)
+            # Ordinary step
+            else:
+                snake.remove_tail_end()
+                reward = -1
+
+        # Discount factor
+        discount_factor = 0.999
+        reward *= discount_factor ** len(snake.body)
 
         return reward
+
+    # def step_snake(self, action, snake_idx) -> int:
+    #     """
+    #     moves snake, if it is alive, and then checks for food and snake collisions
+    #     """
+
+    #     # cannot use self.alive_snakes() here as the list of actions contains entries for all snakes, also dead ones
+    #     snake = self.snakes[snake_idx]
+
+    #     # check if snake is alive
+    #     if not snake.is_alive:
+    #         return 0
+
+    #     # move snake without removing tail end
+    #     snake.step_without_removing_tail_end(action)
+
+    #     # check for death of snake
+    #     if self.is_off_grid(snake.head) or self.is_snake_square_except_own_head(snake):
+    #         snake.is_alive = False
+    #         reward = -1000
+    #     # check for food
+    #     elif self.is_food_square(snake.head):
+    #         self.foods.remove(snake.head)  # all food coords are unique
+    #         self.place_new_food()
+    #         reward = 1000
+    #     # ordinary step
+    #     else:
+    #         snake.remove_tail_end()
+    #         reward = 1
+
+    #     return reward
 
     def step(self, actions) -> tuple[list[(int, int)], list[Snake], list[int], bool, dict[str, int]]:
         """
@@ -229,11 +272,13 @@ class Controller:
         returns: the observation, a list of rewards including dead snakes, whether terminated or not, info. rewards for
         dead snakes are 0
         """
-        assert not self.n_alive_snakes() == 0 and not self.n_empty_squares() == 0, "don't call step() if terminated is True"
+        assert not self.n_alive_snakes() == 0 and not self.n_empty_squares(
+        ) == 0, "don't call step() if terminated is True"
 
         # it's not fair if always the same snake can perform its action first, so randomly permute the
         # order in which snakes can perform their action
-        rewards = [0] * len(self.snakes)  # to allow assignment by index instead of append
+        # to allow assignment by index instead of append
+        rewards = [0] * len(self.snakes)
         random_perm = np.random.permutation(len(self.snakes))
         for i in random_perm:
             rewards[i] = self.step_snake(actions[i], i)
@@ -252,5 +297,3 @@ class Controller:
 
         # return the complete state as observation
         return self.foods, self.alive_snakes(), rewards, terminated, {"snakes_remaining": self.n_alive_snakes()}
-
-

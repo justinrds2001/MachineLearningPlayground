@@ -1,4 +1,4 @@
-# gymsnake &emsp; <0_0>~~~~~~~~^-^-^
+# gymsnake &emsp; <0_0>&#126;&#126;&#126;&#126;&#126;&#126;&#126;&#126;^-^-^
 
 <img src="./src/img/ObsTypePixelGrid.png" alt="drawing" width="320"/>
 <img src="./src/img/MultiColorSnake.png" alt="drawing" width="300"/>
@@ -11,32 +11,39 @@ libraries.
 ## Installing gymsnake
 1. Clone this repository
 2. Install dependencies:
+
    * `conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia`
-   * `conda install gymnasium numpy matplotlib stable-baselines3[extra] tensorboard pip -c conda-forge`
+   * `conda install gymnasium numpy matplotlib stable-baselines3[extra] tensorboard pip jupyter notebook -c conda-forge`
+   
 3. Navigate to the cloned repository
 4. As you will be making changes to the source code of gymsnake, we'll install it as an so-called "editable package"
    in the conda environment with command `pip install -e .`
 
-   **Note**, if you make changes to the gymsnake source code, and you use Jupyter notebook, you need to restart 
-   the Jupyter notebook kernel to pick up the changes you made in gymsnake. Reason is that Jupyter notebook does not 
-   re-import packages if the kernel is not restarted, so it will not see the source code changes.  If you use an IDE
-   like PyCharm or Visual Studio Code, you don't have this problem.
+**Note**, if you make changes to the gymsnake source code, and you use Jupyter notebook, you need to restart 
+the Jupyter notebook kernel to pick up the changes you made in gymsnake. Reason is that Jupyter notebook does not 
+re-import packages if the kernel is not restarted, so it will not see the source code changes. An alternative solution is
+to add the following two lines to your Jupyter notebook:
+
+* `%load_ext autoreload`
+* `%autoreload 2`
+
+If you use an IDE
+like PyCharm or Visual Studio Code, you don't have this problem.
 
 ## Using gymsnake
 After installation, you can create a gymsnake environment in your agent as follows:
-   
-```
- import gymnasium as gym
- import gymsnake  # performs the registration of snake-v1 with gymnasium
- env = gym.make('snake-v1', disable_env_checker=True)  # creates an environment and wraps it with gymnasium.wrappers.time_limit.TimeLimit
- 
- # if you want multiplayer; otherwise remove this statement and use default values
- env.env.n_snakes = 2  # note the double env, caused by the wrapping!
- 
- observation = env.reset()
- env.render()
- ```
 
+```
+import gymnasium as gym
+import gymsnake  # performs the registration of snake-v1 with gymnasium
+env = gym.make('snake-v1', disable_env_checker=True)  # creates an environment and wraps it with gymnasium.wrappers.time_limit.TimeLimit
+ 
+# if you want multiplayer on 7x7 grid
+env = gym.make('snake-v1', n_snakes=2, grid_size=(7, 7), disable_env_checker=True)
+ 
+observation = env.reset()
+env.render()
+```
 
 ## Game parameters
 Just above you saw how to change the number of snakes in the game. There are other parameters that you can tweak.
@@ -256,7 +263,6 @@ Interesting to note:
 * Anaconda prompt> `conda install tensorboard -c conda_forge`
 * In the anaconda command prompt, go to the folder from where your start traning sessions, using `cd`.
 * Start Tensorboard by typing `tensorboard --logdir tensorboard_logs/` in the anaconda command prompt.
-
 
 ## Problems 
 

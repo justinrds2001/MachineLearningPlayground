@@ -1,4 +1,4 @@
-# Single-player agent using RL library Stable-Baselines3
+# Single-player agent for gymsnake using RL library Stable-Baselines3
 
 import time
 import logging
@@ -13,27 +13,27 @@ if not log.hasHandlers(): log.addHandler(logging.StreamHandler())
 env = gym.make("snake-v1", disable_env_checker=True)
 
 '''
-# snake has Markov property, but slower learning due to larger state space
+# this snake has the Markov property, but will learn slower due to larger state space
 env = gym.make("snake-v1", unicolor_body=False, disable_env_checker=True)
+
+# some algorithms of SB3 require a vectorized environment. Here's an example how to use 
+# DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv
+env = DummyVecEnv([lambda: gym.make("snake-v1", n_snakes = 2, disable_env_checker=True)])  
+
+# if you want to use gymsnake source code as part of your project instead of 
+# installed as a package, here's an example how to do this, using DummyVecEnv.
+# Advantage of using it this way is that modifications in the source code of gymsnake are
+# immediately effective in your project, without needing to restart the Jupyter notebook
+# kernel. Note that in this way the environment is not wrapped by 
+# gymnasium.wrappers.time_limit.TimeLimit, so no step limit of 400 # steps is enforced. 
+# You have to add this yourself in the code of the environment!
+from stable_baselines3.common.vec_env import DummyVecEnv
+env = DummyVecEnv([lambda: SnakeEnv(n_snakes=2)])
 '''
 
 obs, info = env.reset()
 env.render()
-
-'''
-# some algorithm of SB3 require a vectorized environment. Here's an example how to use DummyVecEnv
-from stable_baselines3.common.vec_env import DummyVecEnv
-env = DummyVecEnv([lambda: gym.make("snake-v1", disable_env_checker=True)])  
-env.envs[0].env.n_snakes = 2  # note the 3x env: first TimeLimit wrapper, then DummyVecEnv, then our own SnakeEnv!!
-
-# if you want to use gymsnake source code as part of your project, here's an example how to do this, using DummyVecEnv.
-# Advantage of using it this way is that modifications in the source code of gymsnake are immediately effective 
-# in your project, without needing to restart the Jupyter notebook kernel.
-# Note that in this way the environment is not wrapped by gymnasium.wrappers.time_limit.TimeLimit, so no step limit of 400 
-# steps is enforced. You have to add this yourself in the code of the environment!
-from stable_baselines3.common.vec_env import DummyVecEnv
-env = DummyVecEnv([lambda: SnakeEnv(n_snakes=2)])
-'''
 
 training = True
 if training:

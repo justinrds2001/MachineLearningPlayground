@@ -9,8 +9,7 @@ from typing import Optional
 
 log = logging.getLogger("snake_env")
 log.setLevel(logging.INFO)
-if not log.hasHandlers():
-    log.addHandler(logging.StreamHandler())
+if not log.hasHandlers(): log.addHandler(logging.StreamHandler())
 
 
 class SnakeEnv(gym.Env):
@@ -19,11 +18,12 @@ class SnakeEnv(gym.Env):
     """
     metadata = {'render_modes': ['human'], "render_fps": 30}
 
-    def __init__(self, grid_size=(6, 6), body_start_length=1, n_snakes=1, n_foods=1, random_food_init=False,
-                 obs_type=ObsType.DIGIT_GRID, rendering_obs=ObsType.PIXEL_GRID,
+    def __init__(self, render_mode: Optional[str]=None, grid_size=(6, 6), body_start_length=1, n_snakes=1, 
+                 n_foods=1, random_food_init=False, obs_type=ObsType.DIGIT_GRID, rendering_obs=ObsType.PIXEL_GRID,
                  head_representations=((110, 111), ('H', 'I'), (0, 100)), unicolor_body=True, use_bots=False):
 
         super(SnakeEnv, self).__init__()
+        self.render_mode = render_mode
         self.grid_size = grid_size
         self.body_start_length = body_start_length
         self.n_snakes = n_snakes
@@ -44,19 +44,17 @@ class SnakeEnv(gym.Env):
         self.fig = None
 
         assert self.n_snakes <= 19, "too many snakes, not sufficient letters in alphabet to represent snake heads"
-        assert self.n_snakes < self.grid_size[0] - \
-            2, "too many snakes for grid size (x-direction)"
-        assert self.body_start_length < self.grid_size[1] - \
-            2, "body start length too large for grid size (y-direction)"
+        assert self.n_snakes < self.grid_size[0] - 2, "too many snakes for grid size (x-direction)"
+        assert self.body_start_length < self.grid_size[1] - 2, "body start length too large for grid size (y-direction)"
         assert self.n_snakes <= len(self.head_representations[0]) \
-            or self.n_snakes <= len(self.head_representations[1]) \
-            or self.n_snakes <= len(self.head_representations[2]), \
-            "not sufficient head representations provided for number of snakes"
+               or self.n_snakes <= len(self.head_representations[1]) \
+               or self.n_snakes <= len(self.head_representations[2]), \
+               "not sufficient head representations provided for number of snakes"
         assert min(self.head_representations[0]) > self.digit_body_representation_offset, \
             "digit head representations overlap with body representation"
         assert self.unicolor_body or min(self.head_representations[0]) > self.grid_size[0] * self.grid_size[1] \
-            + self.digit_body_representation_offset, \
-            "digit head representations too low numbers, so risk of overlap with multicolor body representations"
+               + self.digit_body_representation_offset, \
+               "digit head representations too low numbers, so risk of overlap with multicolor body representations"
 
         # Stable-Baselines3 Zoo requires definition of action and observation space to be done
         # in __init__ and not in reset
@@ -64,9 +62,8 @@ class SnakeEnv(gym.Env):
         match self.obs_type:
             case ObsType.COORDS:
                 self.observation_space = spaces.Box(low=0, high=max(self.grid_size[0], self.grid_size[1]),
-                                                    shape=(
-                                                        2 * self.grid_size[0] * self.grid_size[1] + self.n_snakes,),
-                                                    dtype=np.uint8)
+                                                    shape=(2 * self.grid_size[0] * self.grid_size[1] + self.n_snakes,),
+                                                           dtype=np.uint8)
             case ObsType.DIGIT_GRID:
                 self.observation_space = spaces.Box(low=0, high=max(self.head_representations[0]),
                                                     shape=(self.grid_size[0], self.grid_size[1]), dtype=np.uint8)
@@ -90,8 +87,7 @@ class SnakeEnv(gym.Env):
         if isinstance(actions, list) or (isinstance(actions, np.ndarray) and actions.ndim != 0):  # collection type
             if not isinstance(actions[0], Action):
                 actions = list(map(lambda action: Action(action), actions))
-        # non-collection type like int, np.int32, np.int64 or ndarray with ndim=0
-        elif not isinstance(actions, Action):
+        elif not isinstance(actions, Action):  # non-collection type like int, np.int32, np.int64 or ndarray with ndim=0
             actions = Action(actions)
 
         # convert to list, in case agent passed single value instead of list (only for single-player snake)
@@ -101,15 +97,12 @@ class SnakeEnv(gym.Env):
             use_value_instead_of_list = True
 
         if self.use_bots:
-            assert self.n_snakes > 1 and len(
-                actions) == 1, "multiplayer bot-mode not correctly used"
+            assert self.n_snakes > 1 and len(actions) == 1, "multiplayer bot-mode not correctly used"
             # first snake is the agent that is trained and used for prediction; the other snakes (2 to n) are bots
             actions += self.get_bots_action()
-            log.debug(
-                f"actions (1st one is the AI; other ones are the bots): {actions}")
+            log.debug(f"actions (1st one is the AI; other ones are the bots): {actions}")
 
-        foods, alive_snakes, rewards, terminated, info = self.controller.step(
-            actions)
+        foods, alive_snakes, rewards, terminated, info = self.controller.step(actions)
         # in bot-mode stop the game if the AI-bot died, even if other snakes are still alive
         if self.use_bots and not terminated:
             terminated = alive_snakes[0].id != 0
@@ -117,8 +110,7 @@ class SnakeEnv(gym.Env):
         self.env_state = (foods, alive_snakes)
 
         if self.use_bots:
-            # list with only one entry; in bot-mode rewards of bots are discarded
-            rewards = [rewards[0]]
+            rewards = [rewards[0]]  # list with only one entry; in bot-mode rewards of bots are discarded
 
         # convert list back to single value, in case agent passed single value instead of list
         # (only for single-player snake)
@@ -139,8 +131,7 @@ class SnakeEnv(gym.Env):
         # access intensity
         from os.path import exists
         if exists("learned_models/multisnake_agent.zip"):
-            log.debug(
-                f"trained model found (learned_models/multisnake_agent.zip), so let's use it")
+            log.debug(f"trained model found (learned_models/multisnake_agent.zip), so let's use it")
             from stable_baselines3 import PPO
             self.bot_model = PPO.load("learned_models/multisnake_agent")
         else:
@@ -175,35 +166,31 @@ class SnakeEnv(gym.Env):
         return bot_actions
 
     def reset(self,  *,
-              seed: Optional[int] = None,
-              options: Optional[dict] = None,) -> tuple[np.ndarray, dict[str, int]]:
+        seed: Optional[int] = None,
+        options: Optional[dict] = None,) -> tuple[np.ndarray, dict[str, int]]:
         """
         initializes or re-initializes the environment
         also creates an observation and returns it
         """
         super().reset(seed=seed)
-
+        
         self.controller = Controller(self.grid_size, self.body_start_length, self.n_snakes, self.n_foods,
                                      self.random_food_init, self.square_size)
-        self.env_state = (self.controller.foods,
-                          self.controller.alive_snakes())
+        self.env_state = (self.controller.foods, self.controller.alive_snakes())
 
         self.initialize_bots()
 
         return self.observation(self.obs_type, self.head_representations), {}
 
     def render(self, mode='human', close=False, frame_speed=.1) -> None:
-        render_obs = self.observation(
-            self.rendering_obs, self.head_representations)
+        render_obs = self.observation(self.rendering_obs, self.head_representations)
         match self.rendering_obs:
             case ObsType.COORDS:
                 print(render_obs)
             case ObsType.DIGIT_GRID:
-                print(np.flip(np.transpose(render_obs), axis=0))
-                print('')
+                print(np.flip(np.transpose(render_obs), axis=0)); print('')
             case ObsType.LETTER_GRID:
-                print(np.flip(np.transpose(render_obs), axis=0))
-                print('')
+                print(np.flip(np.transpose(render_obs), axis=0)); print('')
             case ObsType.PIXEL_GRID:
                 if self.viewer is None:
                     self.fig = plt.figure()
@@ -249,17 +236,14 @@ class SnakeEnv(gym.Env):
         else:  # non-human-readable format good for machine learning
             coord_obs = []
             for food in foods:
-                # extend automatically converts tuple to list
-                coord_obs.extend(food)
+                coord_obs.extend(food)  # extend automatically converts tuple to list
             for snake in alive_snakes:
                 coord_obs.append(snake.id)
                 coord_obs.extend(snake.head)
                 for body in snake.body:
                     coord_obs.extend(body)
             # padding with -1 up to observation space length
-            padding_length = 2 * \
-                self.grid_size[0] * self.grid_size[1] + \
-                self.n_snakes - len(coord_obs)
+            padding_length = 2 * self.grid_size[0] * self.grid_size[1] + self.n_snakes - len(coord_obs)
             coord_obs.extend([-1] * padding_length)
             return coord_obs
 
@@ -318,8 +302,7 @@ class SnakeEnv(gym.Env):
             self.draw_square(food, food_color, pixel_grid)
 
         for snake in alive_snakes:
-            head_color = np.array(
-                [255, head_representations[2][snake.id], 0], dtype=np.uint8)
+            head_color = np.array([255, head_representations[2][snake.id], 0], dtype=np.uint8)
             self.draw_square(snake.head, head_color, pixel_grid)
             for i, part in enumerate(snake.body):
                 assert self.unicolor_body or i * self.multicolor_body_delta <= 255, \

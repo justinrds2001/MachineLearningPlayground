@@ -3,13 +3,11 @@
 
 import logging
 import gymnasium as gym
-# performs the registration of snake-v1 with gymnasium
-from gymsnake.envs.controller import Action
+from gymsnake.envs.controller import Action  # performs the registration of snake-v1 with gymnasium
 
 log = logging.getLogger("snake_challenge")
 log.setLevel(logging.INFO)
-if not log.hasHandlers():
-    log.addHandler(logging.StreamHandler())
+if not log.hasHandlers(): log.addHandler(logging.StreamHandler())
 
 env = gym.make('snake-v1', disable_env_checker=True)
 obs, info = env.reset()
@@ -24,7 +22,7 @@ def move(action):
         obs_, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
         total_reward += reward
-        env.render()
+        env.render(frame_speed=.01)
     return done
 
 
@@ -45,23 +43,17 @@ def follow_e_pattern():
     while not done:
         # move up
         while snake.head[1] < env.grid_size[1] - 1:
-            if move(Action.UP):
-                return
+            if move(Action.UP): return
         # do the squirming
         for i in range(env.grid_size[1]//2):
             while snake.head[0] < env.grid_size[0] - 1:
-                if move(Action.RIGHT):
-                    return
-            if move(Action.DOWN):
-                return
+                if move(Action.RIGHT): return
+            if move(Action.DOWN): return
             while snake.head[0] > 1:
-                if move(Action.LEFT):
-                    return
+                if move(Action.LEFT): return
             if i < env.grid_size[1]//2 - 1:
-                if move(Action.DOWN):
-                    return
-        if move(Action.LEFT):
-            return
+                if move(Action.DOWN): return
+        if move(Action.LEFT): return
 
 
 assert env.grid_size[1] % 2 == 0, "grid_size in y-direction must be even"

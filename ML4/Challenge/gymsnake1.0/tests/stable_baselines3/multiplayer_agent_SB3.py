@@ -1,4 +1,5 @@
-# Multiplayer agent using RL library Stable-Baselines3, using use_bots=True for training and playing
+# Multiplayer agent for gymsnake using RL library Stable-Baselines3
+# using use_bots=True for training and playing
 
 from os.path import exists
 import time
@@ -14,20 +15,15 @@ if not log.hasHandlers(): log.addHandler(logging.StreamHandler())
 
 # use_bots=True: one learning AI-snake, whereas the other snake(s) are bots
 env = gym.make("snake-v1", n_snakes=2, use_bots=True,
-               head_representations=((3, 4), ('H', 'I'), (0, 100)), 
+               head_representations=((3, 4), ('H', 'I'), (0, 100)), # digit-grid, letter-grid, pixel-grid
                disable_env_checker=True)
 
 '''
 # example: settings for 3 snakes:
 env = gym.make("snake-v1", n_snakes=3, use_bots=True, 
-               head_representations=((110, 111, 112), ('H', 'I', 'J'), (0, 100, 200)), 
+               head_representations=((110, 111, 112), ('H', 'I', 'J'), (0, 100, 200)), # digit-grid, letter-grid, pixel-grid
                disable_env_checker=True)
 '''
-
-# explicit wrapping by a monitor is needed to avoid error "RuntimeError: Tried to step environment that needs reset"
-# when loading model from disk to continue learning, using the line that is also below:
-# model = PPO.load("learned_models/multisnake_agent", env=env)
-env = Monitor(env, ".")
 
 obs, info = env.reset()
 env.render()
